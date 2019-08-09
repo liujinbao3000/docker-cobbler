@@ -9,11 +9,13 @@
       --name cobbler \
       --net host \
       -v /mnt:/mnt \
-      -e SERVER_IP="192.168.88.10" \
       -e ROOT_PASSWORD="China123" \
-      -e DHCP_RANGE="192.168.88.200 192.168.88.230" \
+      -e PXE_TITLE="Hello Cobbler" \
+      -e SERVER_IP="192.168.88.10" \
       -e DHCP_SUBNET="192.168.88.0" \
+      -e DHCP_MASK="255.255.255.0" \
       -e DHCP_ROUTER="192.168.88.1" \
+      -e DHCP_RANGE="192.168.88.200 192.168.88.230" \
       -e DHCP_DNS="223.5.5.5" \
       liujinbao3000/cobbler:latest
    ```
