@@ -32,6 +32,11 @@ RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == system
 
 ADD supervisord.d/conf.ini /etc/supervisord.d/conf.ini
 ADD start.sh /start.sh
+ADD set-ip /var/www/cobbler/pub/set-ip
+ADD menu /usr/local/bin/menu
+ADD kickstarts/sample_end-docker.ks /var/lib/cobbler/kickstarts/sample_end-docker.ks
+ADD kickstarts/sample_end-docker-graphical-manual.ks /var/lib/cobbler/kickstarts/sample_end-docker-graphical-manual.ks
+RUN chmod +x /usr/local/bin/menu
 RUN chmod +x /start.sh
 
 CMD ["/start.sh"]

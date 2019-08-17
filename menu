@@ -1,0 +1,99 @@
+#!/bin/bash
+#cobbler 帮助菜单
+basepath=$(cd `dirname $0`; pwd)
+function menu ()
+{
+ cat << EOF
+----------------------------------------
+|**************cobbler菜单**************|
+----------------------------------------
+`echo -e "\033[47;30m 可以在任意选择界面按"Ctrl+c"键退出\033[0m"`
+`echo -e "\033[47;30m 1)重启服务(默认参数)\033[0m"`
+`echo -e "\033[47;30m 2)全局查看\033[0m"`
+`echo -e "\033[47;30m 3)导入一个发行版\033[0m"`
+`echo -e "\033[47;30m 4)更改PXE安装系统的root密码\033[0m"`
+`echo -e "\033[47;30m 5)更改本机IP\033[0m"`
+`echo -e "\033[47;30m 6)\033[0m"`
+`echo -e "\033[47;30m 7)未定义\033[0m"`
+`echo -e "\033[47;30m 8)未定义\033[0m"`
+`echo -e "\033[47;30m 9)显示帮助信息\033[0m"`
+`echo -e "\033[47;30m 0)退出\033[0m"`
+EOF
+read -p "请输入功能对应的数字：" num1
+while [ $num1 != '0' ];do
+case $num1 in
+ 1)
+   clear
+   cobbler sync
+   systemctl restart cobblerd
+   menu
+   ;;
+ 2)
+   clear
+   cobbler list
+   menu
+   ;;
+ 3)
+   clear
+   read -p "输入菜单名称:" name
+   read -p "输入发行版路径:" path
+   cobbler import --name=$name --path=$path
+   menu
+   ;;
+ 4)
+   clear
+   read -p "输入root密码:" ROOT_PASSWORD
+   PASSWORD=`openssl passwd -1 -salt hLGoLIZR $ROOT_PASSWORD`
+   sed -i "s#^default_password.*#default_password_crypted: \"$PASSWORD\"#g" /etc/cobbler/settings   
+   cobbler sync
+   systemctl restart cobblerd
+   menu
+   ;;
+ 5)
+   clear
+   read -p "输入IP前缀(如192.168.100):" ip1
+   read -p "输入IP地址(如100):" ip2
+   ip a|grep qlen|awk -F: '{print $2}'
+   read -p "输入接口名称:" interface
+   mask=255.255.255.0
+   sed -i "/IPADDR=/cIPADDR=$ip1.$ip2" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/NETMASK=/cNETMASK=$mask" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/GATEWAY=/cGATEWAY=$ip1.1" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/^server:/cserver: $ip1.$ip2" /etc/cobbler/settings
+   sed -i "/^next_server:/cnext_server: $ip1.$ip2" /etc/cobbler/settings
+   sed -i "/^subnet/csubnet $ip1.0 netmask $mask {" /etc/cobbler/dhcp.template
+   sed -i "/option routers\s*[0-9]/c\ \ \ \ \ option routers             $ip1.$ip2;" /etc/cobbler/dhcp.template
+   sed -i "/option domain-name-servers/c\ \ \ \ \ option domain-name-servers 223.5.5.5;" /etc/cobbler/dhcp.template
+   sed -i "/option subnet-mask\s*[0-9]/c\ \ \ \ \ option subnet-mask         255.255.255.0;" /etc/cobbler/dhcp.template
+   sed -i "/range dynamic-bootp/c\ \ \ \ \ range dynamic-bootp        $ip1.200 $ip1.251;" /etc/cobbler/dhcp.template
+   systemctl restart network cobblerd
+   cobbler sync 2@ > /dev/null
+   egrep "IPADDR|NETMASK|GATEWAY|DNS1" /etc/sysconfig/network-scripts/ifcfg-$interface
+   egrep "^subnet|option routers|option domain-name-servers|option subnet-mask|range dynamic-bootp" /etc/cobbler/dhcp.template
+   menu
+   ;;
+ 6)
+   clear
+   menu
+   ;;
+ 7)
+   menu
+   ;;
+ 8)
+   clear
+   read -s -n1 -p "按任意键继续 ... "
+   menu
+   ;;
+ 9)
+   clear
+ cat << EOF
+`echo -e "\033[47;30m 1)\033[0m"`
+EOF
+   menu
+   ;;
+ 0)
+   exit 0
+esac
+done
+}
+menu

@@ -1,0 +1,48 @@
+#!/bin/bash
+#set var
+interface=ens33
+ip=192.168.88.44
+mask=255.255.255.0
+gateway=192.168.88.1
+dns1=223.5.5.5
+dns2=114.114.114.114
+#list interface
+ip address show|grep mtu|awk -F: '{print $1,$2}'
+clear
+ cat << EOF
+`echo -e "\033[47;30m ***********************\033[0m"`
+`echo -e "\033[47;30m *IP=$ip\033[0m"`
+`echo -e "\033[47;30m *NETMASK=$mask\033[0m"`
+`echo -e "\033[47;30m *GATEWAY=$gateway\033[0m"`
+`echo -e "\033[47;30m *dns1=$dns1\033[0m"`
+`echo -e "\033[47;30m *dns2=$dns2\033[0m"`
+`echo -e "\033[47;30m ***********************\033[0m"`
+EOF
+echo ""
+#modify IP
+if [[ -e /etc/sysconfig/network-scripts/ifcfg-$interface ]];then
+   cp /etc/sysconfig/network-scripts/ifcfg-$interface /etc/sysconfig/network-scripts/ifcfg-$interface.$(date "+%Y-%m-%d_%H:%M")
+   sed -i "/^BOOTPROTO/d" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/^ONBOOT/d" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/^IPADDR/d" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/^NETMASK/d" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/^IPPREFIX/d" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/^GATEWAY/d" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/^DNS1/d" /etc/sysconfig/network-scripts/ifcfg-$interface
+   sed -i "/^DNS2/d" /etc/sysconfig/network-scripts/ifcfg-$interface
+   cat >> /etc/sysconfig/network-scripts/ifcfg-$interface << EOF
+BOOTPROTO=static
+ONBOOT=yes
+IPADDR=$ip
+NETMASK=$mask
+GATEWAY=$gateway
+DNS1=$dns1
+DNS2=$dns2
+EOF
+   echo ""
+   echo /etc/sysconfig/network-scripts/ifcfg-$interface
+   egrep "IPADDR|NETMASK|GATEWAY|DNS" /etc/sysconfig/network-scripts/ifcfg-$interface
+   systemctl restart network 2> /dev/null || service network restart
+   else
+   echo "/etc/sysconfig/network-scripts/ifcfg-$interface file is not exist"
+fi
